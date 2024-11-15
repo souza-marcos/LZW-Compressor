@@ -1,10 +1,11 @@
 class radixNode:
-    def __init__(self, prefix: str = "", is_leaf: bool = False):
+    def __init__(self, prefix: str = "", is_leaf: bool = False, value: int = None):
         # Prefixo associado a este node
         self.prefix = prefix
 
         # Flag que sinaliza se existe o node é uma folha
         self.is_leaf = is_leaf
+        self.value = value
 
         # Dicionário que mapeia nodes filhos de acordo com o primeiro caracter dos prefixos
         self.children: dict[str, radixNode] = {}
@@ -26,16 +27,16 @@ class radixTree:
         # Quantidade de palavras inseridas na árvore
         self.many_words = 0
 
-    def insert(self, word):
+    def insert(self, word : str, value: int):
         """Insere uma palavra na árvore radix"""
         current_node = self.root
         # Verificando prefixos em comum entre os filhos
         while word:
             if not current_node.children:
-                current_node.children[word[0]] = radixNode(word, True)
+                current_node.children[word[0]] = radixNode(word, True, value)
                 return
 
-            for key, child in current_node.children.items():
+            for _, child in current_node.children.items():
                 common_prefix_length = current_node._common_prefix_lenght(word, child.prefix)
                 
                 # Caso exista um filho com prefixo em comum
@@ -46,11 +47,13 @@ class radixTree:
                         split_node = radixNode(child.prefix[common_prefix_length:])
                         split_node.children = child.children
                         split_node.is_leaf = child.is_leaf
+                        split_node.value = child.value
 
                         # Node filho é atualizado
                         child.prefix = child.prefix[:common_prefix_length]
                         child.children = {split_node.prefix[0] : split_node}
                         child.is_leaf = False
+                        child.value = None
                     
                     # Continua o processo com o resto do prefixo de 'word' no nó filho
                     word = word[common_prefix_length:]
@@ -61,13 +64,14 @@ class radixTree:
                 current_node.children[word[0]] = radixNode(word, True)
                 return
         current_node.is_leaf = True
+        current_node.value = value
     
-    def search(self, word):
+    def search(self, word) -> int | None:
         """Busca uma palavra na árvore radix"""
         current_node = self.root
         while word:
             found = False
-            for key, child in current_node.children.items():
+            for _, child in current_node.children.items():
                 common_prefix_len = current_node._common_prefix_lenght(word, child.prefix)
                 if common_prefix_len > 0:
                     word = word[common_prefix_len:]
@@ -75,8 +79,10 @@ class radixTree:
                     found = True
                     break
             if not found:
-                return False
-        return current_node.is_leaf #True #se a palavra tem que obrigatoriamente ter sido inserida: current_node.is_leaf
+                return None
+            
+        #True #se a palavra tem que obrigatoriamente ter sido inserida: current_node.is_leaf    
+        return current_node.value  
     
     def remove(self, word: str):
         """Remove uma palavra da árvore radix. Retorna True se a remoção foi bem-sucedida."""
