@@ -179,7 +179,7 @@ table, which goes from #0 to #31. The decompressor will see #12 and translate
 it just fine as color Q. Then it will see #32 and not yet know what that
 means. But if it thinks about it long enough, it can figure out that QQ should
 be entry#32 in the table and QQ should be the next string output.  So the
-decompression pseudo-code goes something like:
+decompression pseudo-code goest oomething like:
 
       [1] Initialize string table;
      [2] get first code: <code>;

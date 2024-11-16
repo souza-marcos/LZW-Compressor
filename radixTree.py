@@ -1,39 +1,53 @@
 class radixNode:
-    def __init__(self, prefix: str = "", is_leaf: bool = False, value: int = None):
+    def __init__(self, prefix: bytearray = "", is_leaf: bool = False, value: int = None):
         # Prefixo associado a este node
         self.prefix = prefix
 
         # Flag que sinaliza se existe o node é uma folha
         self.is_leaf = is_leaf
         self.value = value
+        self.parent = None
 
         # Dicionário que mapeia nodes filhos de acordo com o primeiro caracter dos prefixos
-        self.children: dict[str, radixNode] = {}
+        self.children: dict[bytes, radixNode] = {}
     
     def _common_prefix_lenght(self, str1, str2):
-        lenght = 0
-        max_lenght = min(len(str1),len(str2))
-        for i in range(max_lenght):
-            if str1[i] != str2[i]:
+        length = 0
+        max_length = min(len(str1),len(str2))
+        for i in range(max_length):
+            if str1[i:(i+1)] != str2[i:(i+1)]:
                 break
-            lenght = lenght + 1
-        return lenght
+            length = length + 1
+        return length
 
 class radixTree:
     def __init__(self):
         # Raiz da árvore
         self.root = radixNode()
-        
+        self.indexTable  = [None] * 4096 
+
         # Quantidade de palavras inseridas na árvore
         self.many_words = 0
 
-    def insert(self, word : str, value: int):
+    def insert(self, word, value: int):
         """Insere uma palavra na árvore radix"""
+        if not word:
+            if not self.root.is_leaf:
+                self.many_words += 1
+            self.root.is_leaf = True
+            self.root.value = value
+            self.indexTable[value] = self.root
+            return
+
+        self.many_words += 1
         current_node = self.root
         # Verificando prefixos em comum entre os filhos
         while word:
             if not current_node.children:
-                current_node.children[word[0]] = radixNode(word, True, value)
+                new_node = radixNode(word, True, value)
+                current_node.children[word[0:1]] = new_node 
+                new_node.parent = current_node
+                self.indexTable[value] = new_node
                 return
 
             for _, child in current_node.children.items():
@@ -48,10 +62,14 @@ class radixTree:
                         split_node.children = child.children
                         split_node.is_leaf = child.is_leaf
                         split_node.value = child.value
+                        split_node.parent = child
+
+                        if child.value is not None: 
+                            self.indexTable[child.value] = split_node
 
                         # Node filho é atualizado
                         child.prefix = child.prefix[:common_prefix_length]
-                        child.children = {split_node.prefix[0] : split_node}
+                        child.children = {split_node.prefix[0:1] : split_node}
                         child.is_leaf = False
                         child.value = None
                     
@@ -61,12 +79,18 @@ class radixTree:
                     break
             # Caso nenhum prefixo em comum seja encontrado: adiciona novo filho
             else:
-                current_node.children[word[0]] = radixNode(word, True)
+                new_node = radixNode(word, True, value)
+                current_node.children[word[0:1]] = new_node
+                new_node.parent = current_node
+                self.indexTable[value] = new_node
                 return
+            
+        print("Erro: palavra já inserida")
         current_node.is_leaf = True
         current_node.value = value
+        self.indexTable[value] = current_node
     
-    def search(self, word) -> int | None:
+    def search(self, word) -> radixNode:
         """Busca uma palavra na árvore radix"""
         current_node = self.root
         while word:
@@ -82,7 +106,7 @@ class radixTree:
                 return None
             
         #True #se a palavra tem que obrigatoriamente ter sido inserida: current_node.is_leaf    
-        return current_node.value  
+        return current_node if current_node.is_leaf else None
     
     def remove(self, word: str):
         """Remove uma palavra da árvore radix. Retorna True se a remoção foi bem-sucedida."""
@@ -113,10 +137,10 @@ class radixTree:
         return False
     
     def print_tree(self):
-        def _print_node(node, prefix=""):
+        def _print_node(node : radixNode, prefix=""):
             # Imprime o prefixo atual e se é uma folha
-            is_leaf = "(folha)" if node.is_leaf else ""
-            print(f"{prefix}{node.prefix} {is_leaf}")
+            is_leaf = f"(folha) => {node.value} " if node.is_leaf else ""
+            print(f"{prefix}{node.prefix} {is_leaf} {node.parent.value if node.parent is not None else "NONE"}" )
 
             # Percorre recursivamente os filhos
             for child in node.children.values():
@@ -124,3 +148,20 @@ class radixTree:
 
         # Inicia a impressão a partir da raiz
         _print_node(self.root)
+
+    def get_word(self, curNode):
+        word = bytearray()
+        while curNode and curNode.parent:
+            word = curNode.prefix + word
+            curNode = curNode.parent
+        return word
+
+    def print_inverted_list(self):
+        for it, elem in enumerate(self.indexTable):
+            if elem is None:
+                print(it, ": None") 
+            else:
+                print(it, ":", self.get_word(elem))
+
+            if it >= self.many_words:
+                break
