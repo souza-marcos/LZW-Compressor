@@ -2,12 +2,11 @@ from radixTree import radixTree
 
 radix = radixTree()
 
-inputs = [b'banana', b'bananas', b'bananinha', b'bananada', b'bana', b'banan', b'b']
+inputs = [b'banana', b'bananas', b'bananinha', b'bananada', b'bana', b'banan', b'bica']
 
-it = 0
+
 for el in inputs:
-    radix.insert(el, it)
-    it += 1
+    radix.insert(el, radix.manyWords)
 
 tests = [b'banana', b'bananas', b'bananinha', b'bananada', b'bana', b'banan', b'casca']
 
@@ -16,4 +15,5 @@ for test in tests:
     node = radix.search(test)
     print(f"Valor: {'VOID' if node is None else node.value}")
 
-radix.print_tree()
+radix.printTree()
+radix.printInvertedList()

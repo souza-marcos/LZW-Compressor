@@ -88,7 +88,7 @@ class radixTree:
         print("Erro: palavra já inserida")
         curNode.isLeaf = True
         curNode.value = value
-        self.indexTable[value] = curNode
+        self.indexTable.append(curNode)
     
     def search(self, word) -> radixNode:
         """Busca uma palavra na árvore radix"""

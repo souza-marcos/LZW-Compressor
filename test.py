@@ -1,10 +1,9 @@
-from lzw import LZWCompressor
+from lzw import LZWCompressor, LZWMode
 
-lzw = LZWCompressor()
-lzw.compress("dijkstra.bmp", "dijkstra.lzw")
-lzw.decompress("dijkstra.lzw", "dijkstra_dec.bmp")
+lzw = LZWCompressor(mode=LZWMode.VARIABLE, limSizeCode=14)
 
-# lzw.compress("test.txt", "test.lzw")
-# lzw.decompress("test.lzw", "test_dec.txt")
+print("Compressing...")
+lzw.compress("./inputs/hollow.bmp", "./outputs/hollow.lzw")
 
-# print(lzw.printDict())
+print("Decompressing...")
+lzw.decompress("./outputs/hollow.lzw", "./outputs/hollow_dec.bmp")

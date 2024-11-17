@@ -33,6 +33,12 @@ class LZWCompressor:
 
     def compress(self, pathIn : str, pathOut : str):
         
+        self.sizeCode = 9 
+        if self.mode == LZWMode.FIXED:
+            self.sizeCode = self.limSizeCode
+
+        self.clearCode = (1 << self.sizeCode) - 1
+
         self.reinitDict()
 
         prefix = bytes()
@@ -67,16 +73,23 @@ class LZWCompressor:
                     prefix = combined
                 
                 # Quando o dicionário estiver cheio
-                if self.dictionary.manyWords == (1 << self.sizeCode) -1:
+                if self.dictionary.manyWords >= (1 << self.sizeCode) -1:
+                    
                     if prefix:
                         idx = self.dictionary.search(prefix).value
                         buffer = (buffer << self.sizeCode) | idx
                         bufferSize += self.sizeCode
                         prefix = bytes()
-                    
+
                     buffer = (buffer << self.sizeCode) | self.clearCode 
                     bufferSize += self.sizeCode
-                    self.reinitDict()
+
+                    if self.sizeCode < self.limSizeCode:
+                        self.sizeCode += 1
+                        self.clearCode = (1 << self.sizeCode) - 1
+                    # Dicionário cheio e tamanho do código no limite
+                    else:       
+                        self.reinitDict()
 
                 nextchr = fin.read(1)
 
@@ -96,10 +109,16 @@ class LZWCompressor:
                     toWrite = (buffer << (self.sizeBufferOut - bufferSize)) & ((1 << self.sizeBufferOut) - 1)
                     fout.write(toWrite.to_bytes(self.sizeBufferOut//8, byteorder='big'))
                 
-        print("Qtd de palavras no dict:", self.dictionary.manyWords) # LOG
+        print(self.dictionary.manyWords) # LOG
 
 
     def decompress(self, pathIn : str, pathOut : str):
+        self.sizeCode = 9 
+        if self.mode == LZWMode.FIXED:
+            self.sizeCode = self.limSizeCode
+
+        self.clearCode = (1 << self.sizeCode) - 1
+        
         self.reinitDict()
 
         with open(pathIn, "rb") as fileIn, open(pathOut, "wb") as fileOut:
@@ -151,7 +170,14 @@ class LZWCompressor:
                     break
 
                 if code == self.clearCode:
-                    self.reinitDict()
+
+                    if self.sizeCode < self.limSizeCode:
+                        self.sizeCode += 1
+                        self.clearCode = (1 << self.sizeCode) - 1
+
+                    else:
+                        self.reinitDict()
+                    
                     code = getNextCode()
                     if code is None:
                         return
