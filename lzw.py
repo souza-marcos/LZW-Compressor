@@ -1,16 +1,31 @@
 from radixTree import radixTree 
+from enum import Enum
+
+class LZWMode(Enum):
+    FIXED = 1
+    VARIABLE = 2
 
 class LZWCompressor:
 
-    clearCode = 2**12 - 1
+    def __init__(self, mode : LZWMode = LZWMode.FIXED, limSizeCode : int = 12):
+        if limSizeCode < 9:
+            raise Exception("Tamanho do código deve ser de pelo menos 9 bits")
 
-    def __init__(self):
         self.dictionary = radixTree()
-        self.sizeCode = 12  # 12-bit code in the fixed variant
-        self.sizeBufferOut = 16
+        self.mode = mode
+        self.limSizeCode = limSizeCode
 
-    def reinitialize(self):
-        print(self.dictionary.many_words)
+        self.sizeCode = 9 
+
+        self.sizeBufferOut = 16         # Tamanho do buffer de saída, Deve ser multiplo de 8
+        if mode == LZWMode.FIXED:
+            self.sizeCode = limSizeCode
+
+        self.clearCode = (1 << self.sizeCode) - 1
+        
+
+    def reinitDict(self):
+        print(self.dictionary.manyWords) # LOG
         self.dictionary = radixTree()
         for i in range(256):    
             self.dictionary.insert(i.to_bytes(1, byteorder='big'), i)
@@ -18,153 +33,150 @@ class LZWCompressor:
 
     def compress(self, pathIn : str, pathOut : str):
         
-        self.reinitialize()
+        self.reinitDict()
 
         prefix = bytes()
         buffer = int(0)
-        buffer_size = 0
+        bufferSize = int(0)
 
         with open(pathIn, "rb") as fin, open(pathOut, "wb") as fout:
             nextchr = fin.read(1)
             while nextchr:
                 combined = prefix + nextchr
                 if not self.dictionary.search(combined):
-                    self.dictionary.insert(combined, self.dictionary.many_words)
+                    self.dictionary.insert(combined, self.dictionary.manyWords)
 
                     idx = self.dictionary.search(prefix)
                     if idx is None:
-                        raise Exception("Prefix not found in dictionary")
+                        raise Exception("Internal error while compressing: Prefix not found in dict!")
                     
                     idx = idx.value
 
                     buffer = (buffer << self.sizeCode) | idx
-                    buffer_size += self.sizeCode
+                    bufferSize += self.sizeCode
 
-                    while buffer_size >= self.sizeBufferOut:
-                        toWrite = (buffer >> (buffer_size - self.sizeBufferOut)) & 0xFFFF
-                        # print(type (toWrite), toWrite, buffer)
+                    while bufferSize >= self.sizeBufferOut:
+                        toWrite = (buffer >> (bufferSize - self.sizeBufferOut)) & ((1 << self.sizeBufferOut) - 1)
                         fout.write(toWrite.to_bytes(self.sizeBufferOut//8, byteorder='big'))
-                        buffer_size -= self.sizeBufferOut
-                        buffer = buffer & ((1 << buffer_size) - 1)
+                        bufferSize -= self.sizeBufferOut
+                        buffer = buffer & ((1 << bufferSize) - 1)
                     
                     prefix = nextchr
                 
                 else:
                     prefix = combined
                 
-                if self.dictionary.many_words == (2**self.sizeCode) -1:
+                # Quando o dicionário estiver cheio
+                if self.dictionary.manyWords == (1 << self.sizeCode) -1:
                     if prefix:
                         idx = self.dictionary.search(prefix).value
                         buffer = (buffer << self.sizeCode) | idx
-                        buffer_size += self.sizeCode
+                        bufferSize += self.sizeCode
+                        prefix = bytes()
                     
-                    buffer = (buffer << self.sizeCode) | ((2**self.sizeCode) - 1)   # Clear Code 
-                    self.reinitialize()
-                    
+                    buffer = (buffer << self.sizeCode) | self.clearCode 
+                    bufferSize += self.sizeCode
+                    self.reinitDict()
 
                 nextchr = fin.read(1)
 
             if prefix:
                 idx = self.dictionary.search(prefix).value
                 buffer = (buffer << self.sizeCode) | idx
-                buffer_size += self.sizeCode
+                bufferSize += self.sizeCode
 
-            if(buffer_size > 0):
-                while buffer_size >= self.sizeBufferOut:
-                    toWrite = (buffer >> (buffer_size - self.sizeBufferOut)) & 0xFFFF
+            if(bufferSize > 0):
+                while bufferSize >= self.sizeBufferOut:
+                    toWrite = (buffer >> (bufferSize - self.sizeBufferOut)) & ((1 << self.sizeBufferOut) - 1)
                     fout.write(toWrite.to_bytes(self.sizeBufferOut//8, byteorder='big'))
-                    buffer_size -= self.sizeBufferOut
-                    buffer = buffer & ((1 << buffer_size) - 1)
+                    bufferSize -= self.sizeBufferOut
+                    buffer = buffer & ((1 << bufferSize) - 1)
                 
-                # TODO: Critical, need to revisit
-                toWrite = (buffer << (self.sizeBufferOut - buffer_size)) & 0xFFFF
-                fout.write(toWrite.to_bytes(self.sizeBufferOut//8, byteorder='big'))
-
-        print(self.dictionary.many_words)
-        # self.printDict()
-        # self.dictionary.print_inverted_list()
+                if bufferSize > 0:
+                    toWrite = (buffer << (self.sizeBufferOut - bufferSize)) & ((1 << self.sizeBufferOut) - 1)
+                    fout.write(toWrite.to_bytes(self.sizeBufferOut//8, byteorder='big'))
+                
+        print("Qtd de palavras no dict:", self.dictionary.manyWords) # LOG
 
 
     def decompress(self, pathIn : str, pathOut : str):
-        self.reinitialize()
+        self.reinitDict()
 
         with open(pathIn, "rb") as fileIn, open(pathOut, "wb") as fileOut:
 
             buffer = 0
-            buffer_size = 0
+            bufferSize = 0
 
-            def get_next_code():
-                nonlocal buffer, buffer_size
-                while buffer_size < self.sizeCode:
+            def getNextCode():
+                nonlocal buffer, bufferSize
+                while bufferSize < self.sizeCode:
                     chunk = fileIn.read(2)
                     if not chunk:
-                        return None
+                        break
                     
                     buffer = (buffer << 16) | int.from_bytes(chunk, byteorder='big')
-                    buffer_size += 16
+                    bufferSize += 16
 
-                code = (buffer >> (buffer_size - self.sizeCode)) & ((1 << self.sizeCode) - 1)
-                buffer_size -= self.sizeCode
-                buffer = buffer & ((1 << buffer_size) - 1)
+                if bufferSize < self.sizeCode: 
+                    bufferSize = 0
+                    return None
+                
+                code = (buffer >> (bufferSize - self.sizeCode)) & ((1 << self.sizeCode) - 1)
+                bufferSize -= self.sizeCode
+                buffer = buffer & ((1 << bufferSize) - 1)
                 return code
 
-            def get_word(code):
-                if code is None or code >= self.dictionary.many_words:
+            def getWord(code):
+                if code is None or code >= self.dictionary.manyWords:
                     return None
                 
                 node = self.dictionary.indexTable[code]
-                return self.dictionary.get_word(node)
-                # if code is None or code >= self.dictionary.many_words:
-                #     return None
-
-                # return self.dictionary.indexTable[code].prefix  
-
-            code = get_next_code()
+                return self.dictionary.getWord(node)
+                
+            code = getNextCode()
             
             if code is None:
                 return
 
-            word = get_word(code)
+            word = getWord(code)
             if word is None:
-                raise Exception(f"Invalid code: {code}! At line 132")
+                raise Exception(f"Internal error while decompressing: Invalid code: {code}!")
             
             fileOut.write(word)
-            previous_word = word
+            previousWord = word
 
             while True:
-                code = get_next_code()
-                if code is None:
+                code = getNextCode()
+                if code is None: # Maybe EOF or flush the remaining bits
                     break
 
                 if code == self.clearCode:
-                    self.reinitialize()
-                    code = get_next_code()
+                    self.reinitDict()
+                    code = getNextCode()
                     if code is None:
                         return
-                    word = get_word(code)
+                    word = getWord(code)
                     if word is None:
-                        raise Exception(f"Invalid code {code}! At line 149")
-
+                        raise Exception(f"Internal error while decompressing: Invalid code: {code}!")
+                    
                     fileOut.write(word)
-                    previous_word = word 
+                    previousWord = word 
                     continue
                 
-                if code < self.dictionary.many_words:
-                    word = get_word(code)
+                if code < self.dictionary.manyWords:
+                    word = getWord(code)
                     if word is None:
-                        raise Exception(f"Invalid code! {code}")
-
+                        raise Exception(f"Internal error while decompressing: Invalid code: {code}!")
+                    
                     fileOut.write(word)
-                    self.dictionary.insert(previous_word + word[:1], self.dictionary.many_words)
-                    previous_word = word
+                    self.dictionary.insert(previousWord + word[:1], self.dictionary.manyWords)
+                    previousWord = word
 
                 else:
-                    word = previous_word + previous_word[:1]
+                    word = previousWord + previousWord[:1]
                     fileOut.write(word)
-                    self.dictionary.insert(word, self.dictionary.many_words)
-                    previous_word = word
-
-
+                    self.dictionary.insert(word, self.dictionary.manyWords)
+                    previousWord = word
 
     def printDict(self):
-        self.dictionary.print_tree()
+        self.dictionary.printTree()
