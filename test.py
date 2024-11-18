@@ -3,7 +3,7 @@ from lzw import LZWCompressor, LZWMode
 lzw = LZWCompressor(mode=LZWMode.VARIABLE, limSizeCode=14)
 
 print("Compressing...")
-lzw.compress("./inputs/hollow.bmp", "./outputs/hollow.lzw")
+lzw.compress("./inputs/test.txt", "./outputs/test.lzw")
 
 print("Decompressing...")
-lzw.decompress("./outputs/hollow.lzw", "./outputs/hollow_dec.bmp")
+lzw.decompress("./outputs/test.lzw", "./outputs/test_dec.txt")

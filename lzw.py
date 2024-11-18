@@ -1,5 +1,7 @@
 from radixTree import radixTree 
 from enum import Enum
+import sys
+import os
 
 class LZWMode(Enum):
     FIXED = 1
@@ -10,6 +12,10 @@ class LZWCompressor:
     def __init__(self, mode : LZWMode = LZWMode.FIXED, limSizeCode : int = 12):
         if limSizeCode < 9:
             raise Exception("Tamanho do código deve ser de pelo menos 9 bits")
+
+        self.wordsAdded = 0
+        self.memoryDict = 0
+        self.curByte = 0
 
         self.dictionary = radixTree()
         self.mode = mode
@@ -25,14 +31,21 @@ class LZWCompressor:
         
 
     def reinitDict(self):
-        print(self.dictionary.manyWords) # LOG
+        self.memoryDict += sys.getsizeof(self.dictionary)   # Stats
+        self.wordsAdded += self.dictionary.manyWords        # Stats
         self.dictionary = radixTree()
         for i in range(256):    
             self.dictionary.insert(i.to_bytes(1, byteorder='big'), i)
 
 
     def compress(self, pathIn : str, pathOut : str):
-        
+        self.fileInSize = os.path.getsize(pathIn)
+        self.curByte = 0
+        self.curPercent = 0
+
+        self.memoryDict = 0
+        self.wordsAdded = 0
+
         self.sizeCode = 9 
         if self.mode == LZWMode.FIXED:
             self.sizeCode = self.limSizeCode
@@ -47,7 +60,14 @@ class LZWCompressor:
 
         with open(pathIn, "rb") as fin, open(pathOut, "wb") as fout:
             nextchr = fin.read(1)
+
             while nextchr:
+
+                self.curByte += 1
+                if self.curByte * 10 / self.fileInSize > self.curPercent:
+                    self.curPercent += 1
+                    print(f"Compressing... {self.curPercent * 10}%")
+
                 combined = prefix + nextchr
                 if not self.dictionary.search(combined):
                     self.dictionary.insert(combined, self.dictionary.manyWords)
@@ -109,10 +129,18 @@ class LZWCompressor:
                     toWrite = (buffer << (self.sizeBufferOut - bufferSize)) & ((1 << self.sizeBufferOut) - 1)
                     fout.write(toWrite.to_bytes(self.sizeBufferOut//8, byteorder='big'))
                 
-        print(self.dictionary.manyWords) # LOG
+        self.wordsAdded += self.dictionary.manyWords        # Stats
+        self.memoryDict += sys.getsizeof(self.dictionary)   # Stats
 
 
     def decompress(self, pathIn : str, pathOut : str):
+
+        self.curByte = 0
+        self.curPercent = 0
+        self.fileInSize = os.path.getsize(pathIn)
+        self.memoryDict = 0
+        self.wordsAdded = 0
+
         self.sizeCode = 9 
         if self.mode == LZWMode.FIXED:
             self.sizeCode = self.limSizeCode
@@ -133,6 +161,11 @@ class LZWCompressor:
                     if not chunk:
                         break
                     
+                    self.curByte += 2
+                    if self.curByte * 10 / self.fileInSize > self.curPercent:
+                        self.curPercent += 1
+                        print(f"Decompressing... {self.curPercent * 10}%")
+
                     buffer = (buffer << 16) | int.from_bytes(chunk, byteorder='big')
                     bufferSize += 16
 
@@ -203,6 +236,9 @@ class LZWCompressor:
                     fileOut.write(word)
                     self.dictionary.insert(word, self.dictionary.manyWords)
                     previousWord = word
+
+        self.wordsAdded += self.dictionary.manyWords        # Stats
+        self.memoryDict += sys.getsizeof(self.dictionary)
 
     def printDict(self):
         self.dictionary.printTree()
