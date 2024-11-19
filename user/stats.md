@@ -18,4 +18,4 @@ Além disso, também podemos visualizar os intervalos de confiança das taxas de
 
 ![Não foi possível carregar a imagem](https://github.com/souza-marcos/LZW-Compressor/blob/main/images/intervalos_taxas_compressao.png)
 
-Por fim, analisando os dados acima. Percebemos que foi possível realizar compressões em todos osarquivos testados, sendo que o tipo de arquivo com maior variação das taxas de compressão é o arquivo de texto.
+Por fim, analisando os dados acima. Percebemos que foi possível realizar compressões em todos os arquivos testados, sendo que o tipo de arquivo com maior variação das taxas de compressão é o arquivo de texto.
