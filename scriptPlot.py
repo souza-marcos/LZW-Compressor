@@ -55,7 +55,7 @@ def plot_results(dataframe):
     
     
 if __name__ == "__main__":
-    stats_file = "stats.txt"
+    stats_file = "plots/data/stats_texto.txt"
     stats_df = parseStatsFile(stats_file)
     # print(stats_df)
 
