@@ -15,7 +15,7 @@ def compress(input, output, variant, limSizeCode, stats):
     lzw.compress(input, output)
     
     
-    totalTime = (time.perf_counter() - startTime) * 1e3
+    totalTime = time.perf_counter() - startTime
     
     if stats:
         originalSize = os.path.getsize(input)
@@ -34,7 +34,7 @@ def decompress(input, output, variant, limSizeCode, stats):
     lzw = LZWCompressor(mode, limSizeCode)
     lzw.decompress(input, output)
     
-    totalTime = (time.perf_counter() - startTime) / 1e3
+    totalTime = (time.perf_counter() - startTime)
     
     if stats:
         with open("stats.txt", "a") as f:
