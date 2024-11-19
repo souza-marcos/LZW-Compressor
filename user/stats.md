@@ -12,10 +12,10 @@ A partir [deste script](cola link aqui) que roda o programa em arquivos de uma p
 
 No gráfico abaixo podemos verificar as médias das taxas de compressão de cada tipo de arquivo, onde é possível perceber que os arquivos binários, em média, obtiveram as maiores taxas de compressão.
 
-[Não foi possível carregar a imagem](https://github.com/souza-marcos/LZW-Compressor/blob/main/images/grafico_taxas_compressao.png)
+![Não foi possível carregar a imagem](https://github.com/souza-marcos/LZW-Compressor/blob/main/images/grafico_taxas_compressao.png)
 
 Além disso, também podemos visualizar os intervalos de confiança das taxas de compressão no arquivo abaixo.
 
-[Não foi possível carregar a imagem](https://github.com/souza-marcos/LZW-Compressor/blob/main/images/intervalos_taxas_compressao.png)
+![Não foi possível carregar a imagem](https://github.com/souza-marcos/LZW-Compressor/blob/main/images/intervalos_taxas_compressao.png)
 
 Por fim, analisando os dados acima. Percebemos que foi possível realizar compressões em todos osarquivos testados, sendo que o tipo de arquivo com maior variação das taxas de compressão é o arquivo de texto.
