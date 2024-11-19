@@ -7,3 +7,4 @@ As principais tarefas propostas neste trabalham foram a construção do algoritm
 - [Instruções de uso do programa](https://github.com/souza-marcos/LZW-Compressor/blob/main/user/uso.md)
 - [Descrição do algoritmo LZW](https://github.com/souza-marcos/LZW-Compressor/blob/main/user/lzw.md)
 - [Descrição do dicionário (Árvore Radix)](https://github.com/souza-marcos/LZW-Compressor/blob/main/user/radixTree.md)
+- [Descrição dos testes e estatísticas](https://github.com/souza-marcos/LZW-Compressor/blob/main/user/stats.md)
