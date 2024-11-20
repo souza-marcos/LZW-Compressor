@@ -6,7 +6,7 @@ Para testarmos o desempenho e corretude do algoritmo, foram realizados testes de
 - Arquivos de Imagem
 - Arquivos de Texto
 
-A partir [deste script](cola link aqui) que roda o programa em arquivos de uma pasta, foram armazenadas estatísticas de desempenho, as quais também foram usadas para elaborar os gráficos vistos abaixo. Por estas estatísticas podem ser observadas o tamanho original bem como o tamanho comprimido. Dessa forma, nos arquivos utilizados sempre obtivemos sucesso ao comprimir e descomprimir. Também foram verificados a corretude por meio do comando ```diff```, que também verificou que o algoritmo está funcionando corretamente.
+A partir [deste script](https://github.com/souza-marcos/LZW-Compressor/blob/main/main.py) que roda o programa em arquivos de uma pasta, foram armazenadas estatísticas de desempenho, as quais também foram usadas para elaborar os gráficos vistos abaixo. Por estas estatísticas podem ser observadas o tamanho original bem como o tamanho comprimido. Dessa forma, nos arquivos utilizados sempre obtivemos sucesso ao comprimir e descomprimir. Também foram verificados a corretude por meio do comando ```diff```, que também verificou que o algoritmo está funcionando corretamente.
 
 # Estatísticas
 
